@@ -1,0 +1,698 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BA0E0A502F7568EF004E4169 /* Connect in Frameworks */ = {isa = PBXBuildFile; productRef = BA0E0A4F2F7568EF004E4169 /* Connect */; };
+		BA164E3F2F7547FC00EF9779 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BA164E3E2F7547FC00EF9779 /* AppAuth */; };
+		BA1738C52F75732600096DE1 /* grpc in Frameworks */ = {isa = PBXBuildFile; productRef = BA1738C42F75732600096DE1 /* grpc */; };
+		BAEF90892F837F70003D988D /* IntegrationFFI.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BAEF90862F837F70003D988D /* IntegrationFFI.xcframework */; };
+		BAEF908A2F837F70003D988D /* onnxruntime.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BAEF90872F837F70003D988D /* onnxruntime.xcframework */; };
+		BAEF908B2F837F70003D988D /* integration.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAEF90852F837F70003D988D /* integration.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		BA164E122F75461300EF9779 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BA164DFA2F75461200EF9779 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BA164E012F75461200EF9779;
+			remoteInfo = kico;
+		};
+		BA164E1C2F75461300EF9779 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BA164DFA2F75461200EF9779 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BA164E012F75461200EF9779;
+			remoteInfo = kico;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		BA164E022F75461200EF9779 /* kico.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = kico.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BA164E112F75461300EF9779 /* kicoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = kicoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BA164E1B2F75461300EF9779 /* kicoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = kicoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BA62DCC32F78E13800D688A8 /* grpc */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = grpc; sourceTree = "<group>"; };
+		BAEF90852F837F70003D988D /* integration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = integration.swift; sourceTree = "<group>"; };
+		BAEF90862F837F70003D988D /* IntegrationFFI.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = IntegrationFFI.xcframework; sourceTree = "<group>"; };
+		BAEF90872F837F70003D988D /* onnxruntime.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = onnxruntime.xcframework; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BAD075A82F75829300B29597 /* Exceptions for "kico" folder in "kico" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BA164E012F75461200EF9779 /* kico */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		BA164E042F75461200EF9779 /* kico */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BAD075A82F75829300B29597 /* Exceptions for "kico" folder in "kico" target */,
+			);
+			path = kico;
+			sourceTree = "<group>";
+		};
+		BA164E142F75461300EF9779 /* kicoTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = kicoTests;
+			sourceTree = "<group>";
+		};
+		BA164E1E2F75461300EF9779 /* kicoUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = kicoUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BA164DFF2F75461200EF9779 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BA164E3F2F7547FC00EF9779 /* AppAuth in Frameworks */,
+				BA0E0A502F7568EF004E4169 /* Connect in Frameworks */,
+				BA1738C52F75732600096DE1 /* grpc in Frameworks */,
+				BAEF90892F837F70003D988D /* IntegrationFFI.xcframework in Frameworks */,
+				BAEF908A2F837F70003D988D /* onnxruntime.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA164E0E2F75461300EF9779 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA164E182F75461300EF9779 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		BA164DF92F75461200EF9779 = {
+			isa = PBXGroup;
+			children = (
+				BA164E042F75461200EF9779 /* kico */,
+				BA164E142F75461300EF9779 /* kicoTests */,
+				BA164E1E2F75461300EF9779 /* kicoUITests */,
+				BA164E032F75461200EF9779 /* Products */,
+				BA1738C32F75732600096DE1 /* Frameworks */,
+				BA62DCC32F78E13800D688A8 /* grpc */,
+				BAEF90882F837F70003D988D /* ios-cframework */,
+			);
+			sourceTree = "<group>";
+		};
+		BA164E032F75461200EF9779 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BA164E022F75461200EF9779 /* kico.app */,
+				BA164E112F75461300EF9779 /* kicoTests.xctest */,
+				BA164E1B2F75461300EF9779 /* kicoUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BA1738C32F75732600096DE1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		BAEF90882F837F70003D988D /* ios-cframework */ = {
+			isa = PBXGroup;
+			children = (
+				BAEF90852F837F70003D988D /* integration.swift */,
+				BAEF90862F837F70003D988D /* IntegrationFFI.xcframework */,
+				BAEF90872F837F70003D988D /* onnxruntime.xcframework */,
+			);
+			path = "ios-cframework";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BA164E012F75461200EF9779 /* kico */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BA164E252F75461300EF9779 /* Build configuration list for PBXNativeTarget "kico" */;
+			buildPhases = (
+				BA164DFE2F75461200EF9779 /* Sources */,
+				BA164DFF2F75461200EF9779 /* Frameworks */,
+				BA164E002F75461200EF9779 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				BA164E042F75461200EF9779 /* kico */,
+			);
+			name = kico;
+			packageProductDependencies = (
+				BA164E3E2F7547FC00EF9779 /* AppAuth */,
+				BA0E0A4F2F7568EF004E4169 /* Connect */,
+				BA1738C42F75732600096DE1 /* grpc */,
+			);
+			productName = kico;
+			productReference = BA164E022F75461200EF9779 /* kico.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BA164E102F75461300EF9779 /* kicoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BA164E282F75461300EF9779 /* Build configuration list for PBXNativeTarget "kicoTests" */;
+			buildPhases = (
+				BA164E0D2F75461300EF9779 /* Sources */,
+				BA164E0E2F75461300EF9779 /* Frameworks */,
+				BA164E0F2F75461300EF9779 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BA164E132F75461300EF9779 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				BA164E142F75461300EF9779 /* kicoTests */,
+			);
+			name = kicoTests;
+			packageProductDependencies = (
+			);
+			productName = kicoTests;
+			productReference = BA164E112F75461300EF9779 /* kicoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		BA164E1A2F75461300EF9779 /* kicoUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BA164E2B2F75461300EF9779 /* Build configuration list for PBXNativeTarget "kicoUITests" */;
+			buildPhases = (
+				BA164E172F75461300EF9779 /* Sources */,
+				BA164E182F75461300EF9779 /* Frameworks */,
+				BA164E192F75461300EF9779 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BA164E1D2F75461300EF9779 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				BA164E1E2F75461300EF9779 /* kicoUITests */,
+			);
+			name = kicoUITests;
+			packageProductDependencies = (
+			);
+			productName = kicoUITests;
+			productReference = BA164E1B2F75461300EF9779 /* kicoUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BA164DFA2F75461200EF9779 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2630;
+				LastUpgradeCheck = 2630;
+				TargetAttributes = {
+					BA164E012F75461200EF9779 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					BA164E102F75461300EF9779 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = BA164E012F75461200EF9779;
+					};
+					BA164E1A2F75461300EF9779 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = BA164E012F75461200EF9779;
+					};
+				};
+			};
+			buildConfigurationList = BA164DFD2F75461200EF9779 /* Build configuration list for PBXProject "kico" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = BA164DF92F75461200EF9779;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BA164E3D2F7547FC00EF9779 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */,
+				BA0E0A4E2F7568EF004E4169 /* XCRemoteSwiftPackageReference "connect-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = BA164E032F75461200EF9779 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BA164E012F75461200EF9779 /* kico */,
+				BA164E102F75461300EF9779 /* kicoTests */,
+				BA164E1A2F75461300EF9779 /* kicoUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BA164E002F75461200EF9779 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA164E0F2F75461300EF9779 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA164E192F75461300EF9779 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BA164DFE2F75461200EF9779 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BAEF908B2F837F70003D988D /* integration.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA164E0D2F75461300EF9779 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA164E172F75461300EF9779 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BA164E132F75461300EF9779 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BA164E012F75461200EF9779 /* kico */;
+			targetProxy = BA164E122F75461300EF9779 /* PBXContainerItemProxy */;
+		};
+		BA164E1D2F75461300EF9779 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BA164E012F75461200EF9779 /* kico */;
+			targetProxy = BA164E1C2F75461300EF9779 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		BA164E232F75461300EF9779 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = Q26WB7M45V;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		BA164E242F75461300EF9779 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = Q26WB7M45V;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BA164E262F75461300EF9779 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				AUTH_API_HOST = "https://api.monuo.link/kico";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q26WB7M45V;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = kico/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kico Cam";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OIDC_CLIENT_ID = 252d539d6bca427eadd4b026f491f4ab;
+				OIDC_ISSUER = "https://api.monuo.link/oauth";
+				OIDC_REDIRECT_SCHEME = app.monuo.kico;
+				OIDC_REDIRECT_URI = "app.monuo.kico:/oauth2redirect";
+				OIDC_SCOPES = openid;
+				PRODUCT_BUNDLE_IDENTIFIER = app.monuo.kico;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BA164E272F75461300EF9779 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				AUTH_API_HOST = "https://api.monuo.link/kico";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q26WB7M45V;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = kico/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kico Cam";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OIDC_CLIENT_ID = 252d539d6bca427eadd4b026f491f4ab;
+				OIDC_ISSUER = "https://api.monuo.link/oauth";
+				OIDC_REDIRECT_SCHEME = app.monuo.kico;
+				OIDC_REDIRECT_URI = "app.monuo.kico:/oauth2redirect";
+				OIDC_SCOPES = openid;
+				PRODUCT_BUNDLE_IDENTIFIER = app.monuo.kico;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		BA164E292F75461300EF9779 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q26WB7M45V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.monuo.kicoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/kico.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/kico";
+			};
+			name = Debug;
+		};
+		BA164E2A2F75461300EF9779 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q26WB7M45V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.monuo.kicoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/kico.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/kico";
+			};
+			name = Release;
+		};
+		BA164E2C2F75461300EF9779 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q26WB7M45V;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.monuo.kicoUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = kico;
+			};
+			name = Debug;
+		};
+		BA164E2D2F75461300EF9779 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q26WB7M45V;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.monuo.kicoUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = kico;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BA164DFD2F75461200EF9779 /* Build configuration list for PBXProject "kico" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA164E232F75461300EF9779 /* Debug */,
+				BA164E242F75461300EF9779 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BA164E252F75461300EF9779 /* Build configuration list for PBXNativeTarget "kico" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA164E262F75461300EF9779 /* Debug */,
+				BA164E272F75461300EF9779 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BA164E282F75461300EF9779 /* Build configuration list for PBXNativeTarget "kicoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA164E292F75461300EF9779 /* Debug */,
+				BA164E2A2F75461300EF9779 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BA164E2B2F75461300EF9779 /* Build configuration list for PBXNativeTarget "kicoUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA164E2C2F75461300EF9779 /* Debug */,
+				BA164E2D2F75461300EF9779 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BA0E0A4E2F7568EF004E4169 /* XCRemoteSwiftPackageReference "connect-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/connectrpc/connect-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.1;
+			};
+		};
+		BA164E3D2F7547FC00EF9779 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/openid/AppAuth-iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BA0E0A4F2F7568EF004E4169 /* Connect */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BA0E0A4E2F7568EF004E4169 /* XCRemoteSwiftPackageReference "connect-swift" */;
+			productName = Connect;
+		};
+		BA164E3E2F7547FC00EF9779 /* AppAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BA164E3D2F7547FC00EF9779 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */;
+			productName = AppAuth;
+		};
+		BA1738C42F75732600096DE1 /* grpc */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = grpc;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = BA164DFA2F75461200EF9779 /* Project object */;
+}

@@ -1,0 +1,63 @@
+# 第一阶段：冷启动训练
+#
+# 直接使用仓库内已有的 synthetic 冷启动集。
+
+manifest_path = "../../dataset/cold_start_generated/train_manifest.csv"
+val_manifest_path = "../../dataset/cold_start_generated/val_manifest.csv"
+output_dir = "../runs/pytorch_cold_start"
+
+image_size = 256
+epochs = 20
+batch_size = 1
+num_workers = 4
+lr = 0.00005
+weight_decay = 0.0001
+
+freeze_backbone_epochs = 3
+backbone_lr_scale = 0.05
+warmup_epochs = 1
+min_lr_ratio = 0.1
+val_ratio = 0.1
+
+# 首次冷启动训练保持 false。
+# 如果同一个 output_dir 训练中断，要从 last.pt 继续时再改成 true。
+resume = false
+backbone_name = "fastvit_sa24"
+# 默认关闭在线预训练权重下载，保证离线环境也能直接启动训练。
+# 如果你已经提前拿到 timm FastViT 权重，可以填 backbone_checkpoint。
+backbone_checkpoint = "../fastvit/fastvit_sa24.apple_dist_in1k.safetensors"
+pretrained_backbone = false
+amp = true
+
+[loss]
+synthetic_param_weight = 1.0
+synthetic_gate_weight = 0.35
+synthetic_gate_sparsity_weight = 0.0
+synthetic_param_boundary_weight = 0.03
+synthetic_render_weight = 0.08
+synthetic_reference_render_weight = 0.04
+synthetic_pyramid_weight = 0.03
+synthetic_edge_weight = 0.01
+synthetic_oklab_weight = 0.02
+synthetic_style_weight = 0.005
+
+fitted_param_weight = 0.40
+fitted_gate_weight = 0.20
+fitted_gate_sparsity_weight = 0.0
+fitted_param_boundary_weight = 0.02
+fitted_render_weight = 0.05
+fitted_reference_render_weight = 0.06
+fitted_pyramid_weight = 0.02
+fitted_edge_weight = 0.01
+fitted_oklab_weight = 0.04
+fitted_style_weight = 0.01
+
+huber_delta = 0.15
+param_boundary_margin = 0.08
+param_boundary_target_margin = 0.12
+proxy_render_enabled = true
+proxy_global_color = true
+proxy_local = true
+proxy_optics = false
+proxy_texture = false
+proxy_finish = true

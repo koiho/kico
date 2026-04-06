@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AUTH_API_HOST</key>
+	<string>$(AUTH_API_HOST)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(OIDC_REDIRECT_SCHEME)</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>开启相机</string>
+	<key>NSMotionUsageDescription</key>
+	<string>用于检测设备方向以旋转相机界面元素</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>用于将拍摄的照片保存到系统相册</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>用于读取相册中的照片并展示最近照片缩略图</string>
+	<key>OIDC_CLIENT_ID</key>
+	<string>$(OIDC_CLIENT_ID)</string>
+	<key>OIDC_ISSUER</key>
+	<string>$(OIDC_ISSUER)</string>
+	<key>OIDC_REDIRECT_URI</key>
+	<string>$(OIDC_REDIRECT_URI)</string>
+	<key>OIDC_SCOPES</key>
+	<string>$(OIDC_SCOPES)</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+</dict>
+</plist>

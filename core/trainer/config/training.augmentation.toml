@@ -1,0 +1,64 @@
+# 第二阶段：增强训练 / fitted-real-ref 微调
+#
+# 默认约定 augmentation 数据放在:
+#   core/dataset/fitted_real_ref/
+# 如果你的 fitted manifest 放在别处，只改 manifest_path / val_manifest_path 即可。
+
+manifest_path = "../../dataset/fitted_real_ref/train_manifest.csv"
+# val_manifest_path = "../../dataset/fitted_real_ref/val_manifest.csv"
+output_dir = "../runs/pytorch_augmentation"
+
+image_size = 256
+epochs = 10
+batch_size = 16
+num_workers = 4
+lr = 0.00001
+weight_decay = 0.0001
+
+freeze_backbone_epochs = 2
+backbone_lr_scale = 0.02
+warmup_epochs = 1
+min_lr_ratio = 0.2
+val_ratio = 0.1
+
+# augmentation 第一次启动保持 false，依赖下面的 init_checkpoint 作为起点。
+# 如果同一个 output_dir 中断后续训，再改成 true，此时会优先恢复 runs/pytorch_augmentation/last.pt。
+resume = false
+backbone_name = "fastvit_sa24"
+init_checkpoint = "../runs/pytorch_cold_start/best.pt"
+# 如果你不走 init_checkpoint，也可以额外指定本地 timm FastViT 权重。
+# backbone_checkpoint = "../fastvit/fastvit_sa24.apple_dist_in1k.safetensors"
+amp = true
+
+[loss]
+synthetic_param_weight = 1.0
+synthetic_gate_weight = 0.35
+synthetic_gate_sparsity_weight = 0.0
+synthetic_param_boundary_weight = 0.03
+synthetic_render_weight = 0.08
+synthetic_reference_render_weight = 0.04
+synthetic_pyramid_weight = 0.03
+synthetic_edge_weight = 0.01
+synthetic_oklab_weight = 0.02
+synthetic_style_weight = 0.005
+
+fitted_param_weight = 0.40
+fitted_gate_weight = 0.20
+fitted_gate_sparsity_weight = 0.0
+fitted_param_boundary_weight = 0.02
+fitted_render_weight = 0.06
+fitted_reference_render_weight = 0.08
+fitted_pyramid_weight = 0.03
+fitted_edge_weight = 0.01
+fitted_oklab_weight = 0.05
+fitted_style_weight = 0.015
+
+huber_delta = 0.15
+param_boundary_margin = 0.08
+param_boundary_target_margin = 0.12
+proxy_render_enabled = true
+proxy_global_color = true
+proxy_local = true
+proxy_optics = true
+proxy_texture = true
+proxy_finish = true

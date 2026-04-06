@@ -1,0 +1,53 @@
+[
+  {
+    "name": "cinematic_glow",
+    "signature": {
+      "mean_rgb": [
+        0.50707895,
+        0.53619474,
+        0.39660922
+      ],
+      "luma_p10": 0.3578298,
+      "luma_p50": 0.45740157,
+      "luma_p90": 0.79489803,
+      "saturation_mean": 0.26341528,
+      "edge_energy": 0.011250484,
+      "highlight_ratio": 0.087239586,
+      "shadow_ratio": 0.0
+    }
+  },
+  {
+    "name": "semantic_local",
+    "signature": {
+      "mean_rgb": [
+        0.4162152,
+        0.39226475,
+        0.40935114
+      ],
+      "luma_p10": 0.23336548,
+      "luma_p50": 0.33474904,
+      "luma_p90": 0.806062,
+      "saturation_mean": 0.13159116,
+      "edge_energy": 0.011974253,
+      "highlight_ratio": 0.09814453,
+      "shadow_ratio": 0.0
+    }
+  },
+  {
+    "name": "texture_finish",
+    "signature": {
+      "mean_rgb": [
+        0.5160266,
+        0.43497548,
+        0.41127816
+      ],
+      "luma_p10": 0.23156393,
+      "luma_p50": 0.49242353,
+      "luma_p90": 0.6156267,
+      "saturation_mean": 0.4612331,
+      "edge_energy": 0.04584234,
+      "highlight_ratio": 0.0,
+      "shadow_ratio": 0.026041666
+    }
+  }
+]

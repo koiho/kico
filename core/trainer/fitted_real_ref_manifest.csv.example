@@ -1,0 +1,2 @@
+reference_image_path,neutral_preview_path,mask_bundle_path,label_json_path,source_type,fit_confidence
+refs/real_ref_000001.jpg,neutrals/capture_000001/neutral_preview.png,neutrals/capture_000001/mask_bundle.npz,labels/capture_000001_fit.json,fitted_real_ref,0.72

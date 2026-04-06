@@ -1,0 +1,15 @@
+# 导出 ONNX 的默认配置。
+#
+# 默认会读取同目录下的 training.cold_start.toml，并优先导出
+# 对应 output_dir 里的 best.pt；如果 best.pt 不存在，则回退到 last.pt。
+
+training_config = "training.cold_start.toml"
+output = "../runs/pytorch_cold_start/style_param_net.onnx"
+
+# 可选项：
+# checkpoint = "../runs/pytorch_cold_start/best.pt"
+# image_size = 256
+# backbone_name = "fastvit_sa24"
+
+opset_version = 17
+dynamic_batch = true

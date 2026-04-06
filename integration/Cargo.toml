@@ -1,0 +1,30 @@
+[package]
+name = "integration"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+bindgen-cli = ["uniffi/cli"]
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[[bin]]
+name = "integration"
+path = "uniffi-bindgen.rs"
+required-features = ["bindgen-cli"]
+
+[dependencies]
+half = "2.7.1"
+thiserror = "1.0.61"
+uniffi = "0.31.0"
+inferencer = { path = "../core/inferencer" }
+renderer = { path = "../core/renderer" }
+
+[profile.release]
+opt-level = 's'   # 优化大小
+lto = true        # 链接时优化，减小体积并提升性能
+codegen-units = 1 # 进一步优化
+panic = 'abort'   # 异常时直接中止，减小二进制大小
+strip = true      # 移除调试符号
