@@ -136,21 +136,35 @@ class CameraViewModel: ObservableObject {
         }
 
         state.rawStatusMessage = "RAW: processing..."
-        camera.captureRawPhoto(plan: state.rawProcessingPlan, includeRenderPayload: true) { [weak self] result in
+        let retainRawPhotoData = CaptureWorkflowConfiguration.mode == .dataCollection
+        let renderPayloadMaxDimension = CaptureWorkflowConfiguration.mode == .renderTest
+            ? CaptureWorkflowConfiguration.renderPayloadMaxDimension
+            : nil
+        let previewMaxDimension = CaptureWorkflowConfiguration.mode == .renderTest
+            ? CaptureWorkflowConfiguration.renderCapturePreviewMaxDimension
+            : nil
+        camera.captureRawPhoto(
+            plan: state.rawProcessingPlan,
+            includeRenderPayload: true,
+            retainRawPhotoData: retainRawPhotoData,
+            previewMaxDimension: previewMaxDimension,
+            renderPayloadMaxDimension: renderPayloadMaxDimension
+        ) { [weak self] result in
             guard let self else {
                 return
             }
             switch result {
             case .success(let raw):
-                self.lastRawCapture = raw
                 switch CaptureWorkflowConfiguration.mode {
                 case .renderTest:
+                    self.lastRawCapture = nil
                     self.state.rawStatusMessage = referenceImage == nil
                         ? "RAW: inferencing with self reference..."
                         : "RAW: inferencing..."
                     self.renderCapturedPhoto(raw, referenceImage: referenceImage)
 
                 case .dataCollection:
+                    self.lastRawCapture = raw
                     self.state.rawStatusMessage = "RAW: collecting..."
                     self.collectRawCapture(raw)
                 }
@@ -204,21 +218,31 @@ class CameraViewModel: ObservableObject {
     private func renderCapturedPhoto(_ raw: RawCaptureResult, referenceImage: UIImage?) {
         state.rawStatusMessage = "RAW: preparing masks..."
         let analysisOptions = CaptureWorkflowConfiguration.renderAnalysisOptions
+        let previewImageMaxDimension = CaptureWorkflowConfiguration.renderPreviewImageMaxDimension
         let referenceImageMaxDimension = CaptureWorkflowConfiguration.renderReferenceImageMaxDimension
+        let renderRuntimeOptions = FfiRenderRuntimeOptions(
+            maskWorkingMaxDimension: CaptureWorkflowConfiguration.renderMaskWorkingMaxDimension.map(UInt32.init),
+            bloomBaseMaxDimension: CaptureWorkflowConfiguration.renderBloomBaseMaxDimension.map(UInt32.init)
+        )
         let requiresReferenceImage = CaptureWorkflowConfiguration.renderRequiresReferenceImage
         let savePreviewFallbackOnRenderFailure = CaptureWorkflowConfiguration.savePreviewFallbackOnRenderFailure
+        let previewFallbackImage = raw.previewImage
 
         renderPreparationQueue.async { [weak self] in
             guard let self else { return }
 
             do {
-                let job = try OnnxPhotoRenderJobBuilder.prepare(
-                    referenceImage: referenceImage,
-                    rawCapture: raw,
-                    analysisOptions: analysisOptions,
-                    referenceImageMaxDimension: referenceImageMaxDimension,
-                    requiresReferenceImage: requiresReferenceImage
-                )
+                let job = try autoreleasepool {
+                    try OnnxPhotoRenderJobBuilder.prepare(
+                        referenceImage: referenceImage,
+                        rawCapture: raw,
+                        analysisOptions: analysisOptions,
+                        previewImageMaxDimension: previewImageMaxDimension,
+                        referenceImageMaxDimension: referenceImageMaxDimension,
+                        renderRuntimeOptions: renderRuntimeOptions,
+                        requiresReferenceImage: requiresReferenceImage
+                    )
+                }
 
                 Task { [weak self] in
                     guard let self else { return }
@@ -233,7 +257,9 @@ class CameraViewModel: ObservableObject {
                         InferenceDebugConsole.logRenderStart(usedSelfReference: job.usedSelfReference)
                         let response = try await self.renderService.render(request: job.request)
                         InferenceDebugConsole.log(response: response, usedSelfReference: job.usedSelfReference)
-                        let renderedImage = try OnnxPhotoRenderJobBuilder.makeDisplayImage(from: response.finalImage)
+                        let renderedImage = try autoreleasepool {
+                            try OnnxPhotoRenderJobBuilder.makeDisplayImage(from: response.finalImage)
+                        }
                         await MainActor.run {
                             self.state.isCapturing = false
                             self.lastRawCapture = nil
@@ -255,7 +281,7 @@ class CameraViewModel: ObservableObject {
                         }
                         if savePreviewFallbackOnRenderFailure {
                             await MainActor.run {
-                                self.enqueuePhotoSave(raw.previewImage, successStatusMessage: "RAW: render failed")
+                                self.enqueuePhotoSave(previewFallbackImage, successStatusMessage: "RAW: render failed")
                             }
                         }
                     }

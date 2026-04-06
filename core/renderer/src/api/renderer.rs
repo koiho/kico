@@ -1,7 +1,7 @@
 use crate::{
     api::{
         error::RenderResult,
-        types::{GpuImage, MaskBundle, RenderGates, RenderOutputs, RenderParams},
+        types::{GpuImage, MaskBundle, PreparedMasks, RenderGates, RenderOutputs, RenderParams},
     },
     effects::effect_pyramid::{additive_composite_effect, extract_effect_delta},
     pipeline::{
@@ -13,7 +13,7 @@ use crate::{
         fullscreen_pass::{render_basic_pass, render_basic_pass_to_target},
     },
     stages::{
-        input::mask_prep::MaskPrepStage,
+        input::mask_prep::{MaskPrepRequirements, MaskPrepStage},
         local::semantic_local::SemanticLocalStage,
         optical::{
             bloom::BloomStage, halation::HalationStage, lens_character::LensCharacterStage,
@@ -23,6 +23,12 @@ use crate::{
     },
 };
 use bytemuck::{Pod, Zeroable};
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RenderRuntimeOptions {
+    pub mask_working_max_dimension: Option<u32>,
+    pub bloom_base_max_dimension: Option<u32>,
+}
 
 #[derive(Debug, Default)]
 pub struct Renderer {
@@ -37,6 +43,8 @@ pub struct Renderer {
 }
 
 impl Renderer {
+    const ACTIVE_GATE_EPSILON: f32 = 0.0001;
+
     pub fn build_uniform_pack(
         &self,
         params: &RenderParams,
@@ -55,15 +63,28 @@ impl Renderer {
         gates: &RenderGates,
         masks: &MaskBundle,
     ) -> RenderResult<RenderOutputs> {
-        ctx.validate_image(neutral)?;
-
-        let prepared_masks = self.mask_prep.prepare(
+        self.render_with_runtime_options(
             ctx,
             encoder,
             neutral,
+            params,
+            gates,
+            RenderRuntimeOptions::default(),
             masks,
-            &params.semantic_local.tonal_local,
-        )?;
+        )
+    }
+
+    pub fn render_with_runtime_options(
+        &self,
+        ctx: &RenderContext,
+        encoder: &mut wgpu::CommandEncoder,
+        neutral: &GpuImage,
+        params: &RenderParams,
+        gates: &RenderGates,
+        runtime_options: RenderRuntimeOptions,
+        masks: &MaskBundle,
+    ) -> RenderResult<RenderOutputs> {
+        ctx.validate_image(neutral)?;
 
         let uniforms = self.build_uniform_pack(params, gates, neutral.width);
         let mut img = render_basic_pass(
@@ -82,19 +103,47 @@ impl Renderer {
             "pass_2_global_color_sector",
             &uniforms.global_color_sector,
         )?;
-        img = self.semantic_local.apply(
-            ctx,
-            encoder,
-            &img,
-            &params.semantic_local,
-            gates,
-            &prepared_masks,
-        )?;
+        let semantic_local_requirements = Self::semantic_local_requirements(gates);
+        let prepared_masks = if semantic_local_requirements.any() {
+            let prepared_masks = self.mask_prep.prepare(
+                ctx,
+                encoder,
+                neutral,
+                masks,
+                &params.semantic_local.tonal_local,
+                runtime_options.mask_working_max_dimension,
+                semantic_local_requirements,
+            )?;
+            img = self.semantic_local.apply(
+                ctx,
+                encoder,
+                &img,
+                &params.semantic_local,
+                gates,
+                &prepared_masks,
+            )?;
+            prepared_masks
+        } else {
+            PreparedMasks {
+                face: None,
+                person: None,
+                highlight: None,
+                shadow: None,
+                foreground_subject: None,
+                width: neutral.width,
+                height: neutral.height,
+            }
+        };
 
         let optics_base = img;
-        let bloom_branch =
-            self.bloom
-                .apply(ctx, encoder, &optics_base, &params.bloom, gates.bloom_gate)?;
+        let bloom_branch = self.bloom.apply(
+            ctx,
+            encoder,
+            &optics_base,
+            &params.bloom,
+            gates.bloom_gate,
+            runtime_options.bloom_base_max_dimension,
+        )?;
         let halation_branch = self.halation.apply(
             ctx,
             encoder,
@@ -180,9 +229,38 @@ impl Renderer {
         gate_values: &[f32],
         masks: &MaskBundle,
     ) -> RenderResult<RenderOutputs> {
+        self.render_from_model_outputs_with_runtime_options(
+            ctx,
+            encoder,
+            neutral,
+            normalized_params,
+            gate_values,
+            RenderRuntimeOptions::default(),
+            masks,
+        )
+    }
+
+    pub fn render_from_model_outputs_with_runtime_options(
+        &self,
+        ctx: &RenderContext,
+        encoder: &mut wgpu::CommandEncoder,
+        neutral: &GpuImage,
+        normalized_params: &[f32],
+        gate_values: &[f32],
+        runtime_options: RenderRuntimeOptions,
+        masks: &MaskBundle,
+    ) -> RenderResult<RenderOutputs> {
         let params = RenderParams::from_normalized_slice(normalized_params)?;
         let gates = RenderGates::from_slice(gate_values)?;
-        self.render(ctx, encoder, neutral, &params, &gates, masks)
+        self.render_with_runtime_options(
+            ctx,
+            encoder,
+            neutral,
+            &params,
+            &gates,
+            runtime_options,
+            masks,
+        )
     }
 
     pub fn render_and_submit(
@@ -193,8 +271,35 @@ impl Renderer {
         gates: &RenderGates,
         masks: &MaskBundle,
     ) -> RenderResult<RenderOutputs> {
+        self.render_and_submit_with_runtime_options(
+            ctx,
+            neutral,
+            params,
+            gates,
+            RenderRuntimeOptions::default(),
+            masks,
+        )
+    }
+
+    pub fn render_and_submit_with_runtime_options(
+        &self,
+        ctx: &RenderContext,
+        neutral: &GpuImage,
+        params: &RenderParams,
+        gates: &RenderGates,
+        runtime_options: RenderRuntimeOptions,
+        masks: &MaskBundle,
+    ) -> RenderResult<RenderOutputs> {
         let mut encoder = ctx.create_encoder("renderer_render_and_submit");
-        let outputs = self.render(ctx, &mut encoder, neutral, params, gates, masks)?;
+        let outputs = self.render_with_runtime_options(
+            ctx,
+            &mut encoder,
+            neutral,
+            params,
+            gates,
+            runtime_options,
+            masks,
+        )?;
         ctx.submit_and_wait(encoder)?;
         Ok(outputs)
     }
@@ -207,9 +312,45 @@ impl Renderer {
         gate_values: &[f32],
         masks: &MaskBundle,
     ) -> RenderResult<RenderOutputs> {
+        self.render_from_model_outputs_and_submit_with_runtime_options(
+            ctx,
+            neutral,
+            normalized_params,
+            gate_values,
+            RenderRuntimeOptions::default(),
+            masks,
+        )
+    }
+
+    pub fn render_from_model_outputs_and_submit_with_runtime_options(
+        &self,
+        ctx: &RenderContext,
+        neutral: &GpuImage,
+        normalized_params: &[f32],
+        gate_values: &[f32],
+        runtime_options: RenderRuntimeOptions,
+        masks: &MaskBundle,
+    ) -> RenderResult<RenderOutputs> {
         let params = RenderParams::from_normalized_slice(normalized_params)?;
         let gates = RenderGates::from_slice(gate_values)?;
-        self.render_and_submit(ctx, neutral, &params, &gates, masks)
+        self.render_and_submit_with_runtime_options(
+            ctx,
+            neutral,
+            &params,
+            &gates,
+            runtime_options,
+            masks,
+        )
+    }
+
+    fn semantic_local_requirements(gates: &RenderGates) -> MaskPrepRequirements {
+        MaskPrepRequirements {
+            face: gates.face_gate > Self::ACTIVE_GATE_EPSILON,
+            person: gates.person_gate > Self::ACTIVE_GATE_EPSILON,
+            highlight: gates.tonal_local_gate > Self::ACTIVE_GATE_EPSILON,
+            shadow: gates.tonal_local_gate > Self::ACTIVE_GATE_EPSILON,
+            foreground_subject: gates.foreground_subject_gate > Self::ACTIVE_GATE_EPSILON,
+        }
     }
 }
 

@@ -106,7 +106,9 @@ final class RawPhotoProcessor: @unchecked Sendable {
 
     func process(rawPhotoData: Data,
                  plan: RawProcessingPlan = .identity,
-                 includeRenderPayload: Bool = false) throws -> RawProcessedFrame {
+                 includeRenderPayload: Bool = false,
+                 previewMaxDimension: Int? = nil,
+                 renderPayloadMaxDimension: Int? = nil) throws -> RawProcessedFrame {
         guard !rawPhotoData.isEmpty else {
             throw RawPhotoProcessingError.invalidRawData
         }
@@ -131,14 +133,24 @@ final class RawPhotoProcessor: @unchecked Sendable {
             adjustments: plan.coreImageBaseAdjustments
         )
 
-        let width = Int(baseAdjustedImage.extent.width)
-        let height = Int(baseAdjustedImage.extent.height)
+        let renderImage = downscaleRenderImageIfNeeded(
+            baseAdjustedImage,
+            maxDimension: renderPayloadMaxDimension
+        )
+        let previewImageSource = downscaleRenderImageIfNeeded(
+            baseAdjustedImage,
+            maxDimension: previewMaxDimension
+        )
         let renderPayload = includeRenderPayload
-            ? try makeRenderPayload(from: baseAdjustedImage, width: width, height: height)
+            ? try makeRenderPayload(
+                from: renderImage,
+                width: Int(renderImage.extent.width),
+                height: Int(renderImage.extent.height)
+            )
             : nil
         guard let previewCGImage = ciContext.createCGImage(
-            baseAdjustedImage,
-            from: baseAdjustedImage.extent,
+            previewImageSource,
+            from: previewImageSource.extent,
             format: .RGBA8,
             colorSpace: previewColorSpace
         ) else {
@@ -149,6 +161,25 @@ final class RawPhotoProcessor: @unchecked Sendable {
             previewImage: UIImage(cgImage: previewCGImage),
             renderPayload: renderPayload
         )
+    }
+
+    private func downscaleRenderImageIfNeeded(
+        _ image: CIImage,
+        maxDimension: Int?
+    ) -> CIImage {
+        guard let maxDimension, maxDimension > 0 else {
+            return image
+        }
+
+        let extent = image.extent.integral
+        let longestEdge = max(extent.width, extent.height)
+        guard longestEdge > CGFloat(maxDimension) else {
+            return image
+        }
+
+        let scale = CGFloat(maxDimension) / longestEdge
+        let scaled = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        return scaled.cropped(to: scaled.extent.integral)
     }
 
     private func makeRenderPayload(from image: CIImage,

@@ -167,6 +167,13 @@ def set_backbone_trainability(model: StyleParamNet, trainable: bool) -> None:
         param.requires_grad_(trainable)
 
 
+def freeze_backbone_norm_stats(model: StyleParamNet) -> None:
+    # Keep BN running stats stable during small-batch backbone fine-tuning.
+    for module in model.ref_encoder.modules():
+        if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
+            module.eval()
+
+
 def iter_backbone_parameters(model: StyleParamNet):
     yield from model.ref_encoder.parameters()
 
@@ -214,11 +221,14 @@ def run_epoch(
     optimizer,
     device,
     freeze_backbone: bool,
+    freeze_backbone_norm_stats_enabled: bool,
     scaler,
     use_amp: bool,
 ) -> dict[str, float]:
     model.train()
     set_backbone_trainability(model, not freeze_backbone)
+    if not freeze_backbone and freeze_backbone_norm_stats_enabled:
+        freeze_backbone_norm_stats(model)
     metrics = {
         "loss": 0.0,
         "param_loss": 0.0,
@@ -449,6 +459,7 @@ def main() -> None:
             optimizer,
             device,
             freeze_backbone,
+            config.freeze_backbone_norm_stats,
             scaler,
             use_amp,
         )

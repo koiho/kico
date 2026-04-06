@@ -20,19 +20,22 @@ impl BloomStage {
         input: &GpuImage,
         params: &BloomParams,
         gate: f32,
+        base_max_dimension: Option<u32>,
     ) -> RenderResult<GpuImage> {
         if gate <= 0.0001 || params.intensity <= 0.0001 || params.radius <= 0.0001 {
             return Ok(input.clone());
         }
 
         let (mid_share, wide_share, far_share, veil_share) = bloom_layer_shares(params.veil_mix);
+        let (base_width, base_height) =
+            working_dimensions(input.width, input.height, base_max_dimension);
 
         let mid_extract = extract_highlights(
             ctx,
             encoder,
             input,
-            input.width,
-            input.height,
+            base_width,
+            base_height,
             params.threshold,
             0.05 + params.softness.max(0.0) * 0.14,
             "pass_4_bloom_extract_mid",
@@ -50,8 +53,8 @@ impl BloomStage {
             ctx,
             encoder,
             &mid_extract,
-            downsample_dimension(input.width, 2),
-            downsample_dimension(input.height, 2),
+            downsample_dimension(mid_extract.width, 2),
+            downsample_dimension(mid_extract.height, 2),
             "pass_4_bloom_downsample_wide",
         )?;
 
@@ -67,8 +70,8 @@ impl BloomStage {
             ctx,
             encoder,
             &wide_extract,
-            downsample_dimension(input.width, 4),
-            downsample_dimension(input.height, 4),
+            downsample_dimension(wide_extract.width, 2),
+            downsample_dimension(wide_extract.height, 2),
             "pass_4_bloom_downsample_far",
         )?;
 
@@ -84,8 +87,8 @@ impl BloomStage {
             ctx,
             encoder,
             &far_extract,
-            downsample_dimension(input.width, 8),
-            downsample_dimension(input.height, 8),
+            downsample_dimension(far_extract.width, 2),
+            downsample_dimension(far_extract.height, 2),
             "pass_4_bloom_downsample_veil",
         )?;
 
@@ -145,6 +148,22 @@ impl BloomStage {
 
 fn downsample_dimension(size: u32, divisor: u32) -> u32 {
     (size / divisor).max(1)
+}
+
+fn working_dimensions(width: u32, height: u32, max_dimension: Option<u32>) -> (u32, u32) {
+    let Some(max_dimension) = max_dimension.filter(|value| *value > 0) else {
+        return (width.max(1), height.max(1));
+    };
+
+    let longest_edge = width.max(height);
+    if longest_edge <= max_dimension || longest_edge == 0 {
+        return (width.max(1), height.max(1));
+    }
+
+    let scale = max_dimension as f32 / longest_edge as f32;
+    let working_width = ((width as f32) * scale).round().max(1.0) as u32;
+    let working_height = ((height as f32) * scale).round().max(1.0) as u32;
+    (working_width, working_height)
 }
 
 fn bloom_stride(radius: f32, softness: f32) -> f32 {

@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use ort::{ep, session::Session, value::Tensor};
+use ort::{ep, session::Session, value::TensorRef};
 use serde::Deserialize;
 use thiserror::Error;
 
@@ -79,81 +79,34 @@ impl TensorData {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct InferenceInputs {
-    pub ref_image: TensorData,
-    pub neutral_preview: TensorData,
-    pub mask_tensor: TensorData,
+pub struct TensorDataRef<'a> {
+    pub shape: &'a [usize],
+    pub values: &'a [f32],
 }
 
-impl InferenceInputs {
+pub struct InferenceInputsRef<'a> {
+    pub ref_image: TensorDataRef<'a>,
+    pub neutral_preview: TensorDataRef<'a>,
+    pub mask_tensor: TensorDataRef<'a>,
+}
+
+impl InferenceInputsRef<'_> {
     pub fn validate(&self, metadata: Option<&ModelMetadata>) -> Result<(), InferencerError> {
-        self.ref_image.validate()?;
-        self.neutral_preview.validate()?;
-        self.mask_tensor.validate()?;
-
-        validate_image_tensor(&self.ref_image, REF_IMAGE_INPUT_NAME, REF_IMAGE_CHANNELS)?;
-        validate_image_tensor(
-            &self.neutral_preview,
-            NEUTRAL_PREVIEW_INPUT_NAME,
-            NEUTRAL_PREVIEW_CHANNELS,
-        )?;
-        validate_image_tensor(&self.mask_tensor, MASK_TENSOR_INPUT_NAME, MASK_CHANNELS)?;
-
-        let ref_shape = &self.ref_image.shape;
-        let neutral_shape = &self.neutral_preview.shape;
-        let mask_shape = &self.mask_tensor.shape;
-
-        ensure_same_dimension(
-            ref_shape[0],
-            neutral_shape[0],
-            "ref_image batch",
-            "neutral_preview batch",
-        )?;
-        ensure_same_dimension(
-            ref_shape[0],
-            mask_shape[0],
-            "ref_image batch",
-            "mask_tensor batch",
-        )?;
-        ensure_same_dimension(
-            ref_shape[2],
-            neutral_shape[2],
-            "ref_image height",
-            "neutral_preview height",
-        )?;
-        ensure_same_dimension(
-            ref_shape[2],
-            mask_shape[2],
-            "ref_image height",
-            "mask_tensor height",
-        )?;
-        ensure_same_dimension(
-            ref_shape[3],
-            neutral_shape[3],
-            "ref_image width",
-            "neutral_preview width",
-        )?;
-        ensure_same_dimension(
-            ref_shape[3],
-            mask_shape[3],
-            "ref_image width",
-            "mask_tensor width",
-        )?;
-
-        if let Some(metadata) = metadata {
-            let image_size = metadata.image_size;
-            if ref_shape[2] != image_size || ref_shape[3] != image_size {
-                return Err(InferencerError::InvalidInput {
-                    message: format!(
-                        "model expects image_size={} from metadata, got ref_image shape {:?}",
-                        image_size, ref_shape
-                    ),
-                });
-            }
-        }
-
-        Ok(())
+        validate_inference_inputs(
+            TensorDataRef {
+                shape: self.ref_image.shape,
+                values: self.ref_image.values,
+            },
+            TensorDataRef {
+                shape: self.neutral_preview.shape,
+                values: self.neutral_preview.values,
+            },
+            TensorDataRef {
+                shape: self.mask_tensor.shape,
+                values: self.mask_tensor.values,
+            },
+            metadata,
+        )
     }
 }
 
@@ -266,27 +219,24 @@ impl OnnxInferencer {
         self.metadata.as_ref()
     }
 
-    pub fn infer(&mut self, inputs: InferenceInputs) -> Result<InferenceOutputs, InferencerError> {
+    pub fn infer_ref(
+        &mut self,
+        inputs: InferenceInputsRef<'_>,
+    ) -> Result<InferenceOutputs, InferencerError> {
         inputs.validate(self.metadata.as_ref())?;
-        let InferenceInputs {
-            ref_image,
-            neutral_preview,
-            mask_tensor,
-        } = inputs;
+        let ref_image_tensor =
+            TensorRef::from_array_view((inputs.ref_image.shape, inputs.ref_image.values))?;
+        let neutral_preview_tensor = TensorRef::from_array_view((
+            inputs.neutral_preview.shape,
+            inputs.neutral_preview.values,
+        ))?;
+        let mask_tensor =
+            TensorRef::from_array_view((inputs.mask_tensor.shape, inputs.mask_tensor.values))?;
 
         let outputs = self.session.run(ort::inputs! {
-            REF_IMAGE_INPUT_NAME => Tensor::from_array((
-                ref_image.shape,
-                ref_image.values,
-            ))?,
-            NEUTRAL_PREVIEW_INPUT_NAME => Tensor::from_array((
-                neutral_preview.shape,
-                neutral_preview.values,
-            ))?,
-            MASK_TENSOR_INPUT_NAME => Tensor::from_array((
-                mask_tensor.shape,
-                mask_tensor.values,
-            ))?,
+            REF_IMAGE_INPUT_NAME => ref_image_tensor,
+            NEUTRAL_PREVIEW_INPUT_NAME => neutral_preview_tensor,
+            MASK_TENSOR_INPUT_NAME => mask_tensor,
         })?;
 
         let renderer_params = extract_output_tensor(
@@ -395,21 +345,136 @@ fn extract_output_tensor(
     })
 }
 
-fn validate_image_tensor(
-    tensor: &TensorData,
+fn validate_inference_inputs(
+    ref_image: TensorDataRef<'_>,
+    neutral_preview: TensorDataRef<'_>,
+    mask_tensor: TensorDataRef<'_>,
+    metadata: Option<&ModelMetadata>,
+) -> Result<(), InferencerError> {
+    validate_tensor_view(ref_image.shape, ref_image.values, REF_IMAGE_INPUT_NAME)?;
+    validate_tensor_view(
+        neutral_preview.shape,
+        neutral_preview.values,
+        NEUTRAL_PREVIEW_INPUT_NAME,
+    )?;
+    validate_tensor_view(
+        mask_tensor.shape,
+        mask_tensor.values,
+        MASK_TENSOR_INPUT_NAME,
+    )?;
+
+    validate_image_tensor_parts(ref_image.shape, REF_IMAGE_INPUT_NAME, REF_IMAGE_CHANNELS)?;
+    validate_image_tensor_parts(
+        neutral_preview.shape,
+        NEUTRAL_PREVIEW_INPUT_NAME,
+        NEUTRAL_PREVIEW_CHANNELS,
+    )?;
+    validate_image_tensor_parts(mask_tensor.shape, MASK_TENSOR_INPUT_NAME, MASK_CHANNELS)?;
+
+    ensure_same_dimension(
+        ref_image.shape[0],
+        neutral_preview.shape[0],
+        "ref_image batch",
+        "neutral_preview batch",
+    )?;
+    ensure_same_dimension(
+        ref_image.shape[0],
+        mask_tensor.shape[0],
+        "ref_image batch",
+        "mask_tensor batch",
+    )?;
+    ensure_same_dimension(
+        ref_image.shape[2],
+        neutral_preview.shape[2],
+        "ref_image height",
+        "neutral_preview height",
+    )?;
+    ensure_same_dimension(
+        ref_image.shape[2],
+        mask_tensor.shape[2],
+        "ref_image height",
+        "mask_tensor height",
+    )?;
+    ensure_same_dimension(
+        ref_image.shape[3],
+        neutral_preview.shape[3],
+        "ref_image width",
+        "neutral_preview width",
+    )?;
+    ensure_same_dimension(
+        ref_image.shape[3],
+        mask_tensor.shape[3],
+        "ref_image width",
+        "mask_tensor width",
+    )?;
+
+    if let Some(metadata) = metadata {
+        let image_size = metadata.image_size;
+        if ref_image.shape[2] != image_size || ref_image.shape[3] != image_size {
+            return Err(InferencerError::InvalidInput {
+                message: format!(
+                    "model expects image_size={} from metadata, got ref_image shape {:?}",
+                    image_size, ref_image.shape
+                ),
+            });
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_tensor_view(
+    shape: &[usize],
+    values: &[f32],
+    name: &str,
+) -> Result<(), InferencerError> {
+    if shape.is_empty() {
+        return Err(InferencerError::InvalidInput {
+            message: format!("{name} tensor shape must not be empty"),
+        });
+    }
+    if shape.contains(&0) {
+        return Err(InferencerError::InvalidInput {
+            message: format!("{name} tensor shape contains zero dimension: {:?}", shape),
+        });
+    }
+
+    let expected_len = shape
+        .iter()
+        .copied()
+        .try_fold(1usize, |acc, dim| acc.checked_mul(dim))
+        .ok_or_else(|| InferencerError::InvalidInput {
+            message: format!("{name} tensor shape overflow: {:?}", shape),
+        })?;
+    if expected_len != values.len() {
+        return Err(InferencerError::InvalidInput {
+            message: format!(
+                "{name} tensor shape {:?} expects {} values, got {}",
+                shape,
+                expected_len,
+                values.len()
+            ),
+        });
+    }
+
+    Ok(())
+}
+
+fn validate_image_tensor_parts(
+    shape: &[usize],
     name: &str,
     expected_channels: usize,
 ) -> Result<(), InferencerError> {
-    if tensor.shape.len() != 4 {
+    if shape.len() != 4 {
         return Err(InferencerError::InvalidInput {
-            message: format!("{name} must be NCHW 4D tensor, got {:?}", tensor.shape),
+            message: format!("{name} must be NCHW 4D tensor, got {:?}", shape),
         });
     }
-    if tensor.shape[1] != expected_channels {
+    if shape[1] != expected_channels {
         return Err(InferencerError::InvalidInput {
             message: format!(
                 "{name} expected {} channels, got shape {:?}",
-                expected_channels, tensor.shape
+                expected_channels, shape
             ),
         });
     }
@@ -507,11 +572,25 @@ mod tests {
             dynamic_batch: Some(true),
         };
 
-        let inputs = InferenceInputs {
-            ref_image: TensorData::new(vec![1, 3, 256, 256], vec![0.0; 3 * 256 * 256]).unwrap(),
-            neutral_preview: TensorData::new(vec![1, 3, 256, 256], vec![0.0; 3 * 256 * 256])
-                .unwrap(),
-            mask_tensor: TensorData::new(vec![1, 5, 128, 256], vec![0.0; 5 * 128 * 256]).unwrap(),
+        let ref_image_shape = [1, 3, 256, 256];
+        let neutral_preview_shape = [1, 3, 256, 256];
+        let mask_shape = [1, 5, 128, 256];
+        let ref_image = vec![0.0; 3 * 256 * 256];
+        let neutral_preview = vec![0.0; 3 * 256 * 256];
+        let mask_tensor = vec![0.0; 5 * 128 * 256];
+        let inputs = InferenceInputsRef {
+            ref_image: TensorDataRef {
+                shape: &ref_image_shape,
+                values: &ref_image,
+            },
+            neutral_preview: TensorDataRef {
+                shape: &neutral_preview_shape,
+                values: &neutral_preview,
+            },
+            mask_tensor: TensorDataRef {
+                shape: &mask_shape,
+                values: &mask_tensor,
+            },
         };
 
         let error = inputs
@@ -532,22 +611,27 @@ mod tests {
             .metadata()
             .map(|metadata| metadata.image_size)
             .unwrap_or(256);
-        let inputs = InferenceInputs {
-            ref_image: TensorData::new(
-                vec![1, 3, image_size, image_size],
-                vec![0.0; 3 * image_size * image_size],
-            )?,
-            neutral_preview: TensorData::new(
-                vec![1, 3, image_size, image_size],
-                vec![0.0; 3 * image_size * image_size],
-            )?,
-            mask_tensor: TensorData::new(
-                vec![1, 5, image_size, image_size],
-                vec![0.0; 5 * image_size * image_size],
-            )?,
+        let ref_shape = [1, 3, image_size, image_size];
+        let mask_shape = [1, 5, image_size, image_size];
+        let ref_image = vec![0.0; 3 * image_size * image_size];
+        let neutral_preview = vec![0.0; 3 * image_size * image_size];
+        let mask_tensor = vec![0.0; 5 * image_size * image_size];
+        let inputs = InferenceInputsRef {
+            ref_image: TensorDataRef {
+                shape: &ref_shape,
+                values: &ref_image,
+            },
+            neutral_preview: TensorDataRef {
+                shape: &ref_shape,
+                values: &neutral_preview,
+            },
+            mask_tensor: TensorDataRef {
+                shape: &mask_shape,
+                values: &mask_tensor,
+            },
         };
 
-        let outputs = inferencer.infer(inputs)?;
+        let outputs = inferencer.infer_ref(inputs)?;
         assert_eq!(outputs.renderer_params.shape, vec![1, 100]);
         assert_eq!(outputs.module_gates.shape, vec![1, 11]);
         assert_eq!(outputs.renderer_params.values.len(), 100);

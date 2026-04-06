@@ -8,7 +8,7 @@ import UIKit
 
 struct RawCaptureResult {
     let previewImage: UIImage
-    let rawPhotoData: Data
+    let rawPhotoData: Data?
     let renderPayload: RawRenderPayload?
     let captureMetadata: RawCaptureMetadata
 }
@@ -73,6 +73,9 @@ class MultiCamCameraManager: NSObject, ObservableObject {
     private var isProcessingPhoto = false
     private var pendingRawProcessingPlan: RawProcessingPlan = .identity
     private var pendingIncludeRenderPayload = false
+    private var pendingRetainRawPhotoData = true
+    private var pendingPreviewMaxDimension: Int?
+    private var pendingRenderPayloadMaxDimension: Int?
     private var flashMode: AVCaptureDevice.FlashMode = .off
     private var exposureBias: Float = 0
     private let rawProcessor = RawPhotoProcessor()
@@ -485,6 +488,9 @@ class MultiCamCameraManager: NSObject, ObservableObject {
 
     func captureRawPhoto(plan: RawProcessingPlan = RawProcessingPlan(),
                          includeRenderPayload: Bool = false,
+                         retainRawPhotoData: Bool = true,
+                         previewMaxDimension: Int? = nil,
+                         renderPayloadMaxDimension: Int? = nil,
                          completion: @escaping (Result<RawCaptureResult, RawCaptureError>) -> Void) {
         guard isSessionReady else {
             completion(.failure(.notSupported))
@@ -507,10 +513,16 @@ class MultiCamCameraManager: NSObject, ObservableObject {
         isProcessingPhoto = true
         pendingRawProcessingPlan = plan
         pendingIncludeRenderPayload = includeRenderPayload
+        pendingRetainRawPhotoData = retainRawPhotoData
+        pendingPreviewMaxDimension = previewMaxDimension
+        pendingRenderPayloadMaxDimension = renderPayloadMaxDimension
         rawPhotoCompletion = { [weak self] result in
             completion(result)
             self?.pendingRawProcessingPlan = .identity
             self?.pendingIncludeRenderPayload = false
+            self?.pendingRetainRawPhotoData = true
+            self?.pendingPreviewMaxDimension = nil
+            self?.pendingRenderPayloadMaxDimension = nil
             self?.isProcessingPhoto = false
         }
 
@@ -775,21 +787,32 @@ extension MultiCamCameraManager: AVCapturePhotoCaptureDelegate {
             let rawProcessor = self.rawProcessor
             let plan = self.pendingRawProcessingPlan
             let includeRenderPayload = self.pendingIncludeRenderPayload
+            let retainRawPhotoData = self.pendingRetainRawPhotoData
+            let previewMaxDimension = self.pendingPreviewMaxDimension
+            let renderPayloadMaxDimension = self.pendingRenderPayloadMaxDimension
             let rawProcessingQueue = self.rawProcessingQueue
             let captureMetadata = self.captureMetadata(from: photo)
 
             rawProcessingQueue.async {
+                let processingResult = autoreleasepool {
+                    Result {
+                        try rawProcessor.process(
+                            rawPhotoData: data,
+                            plan: plan,
+                            includeRenderPayload: includeRenderPayload,
+                            previewMaxDimension: previewMaxDimension,
+                            renderPayloadMaxDimension: renderPayloadMaxDimension
+                        )
+                    }
+                }
+
                 do {
-                    let processed = try rawProcessor.process(
-                        rawPhotoData: data,
-                        plan: plan,
-                        includeRenderPayload: includeRenderPayload
-                    )
+                    let processed = try processingResult.get()
                     Task { @MainActor [weak self] in
                         guard let self else { return }
                         let result = RawCaptureResult(
                             previewImage: processed.previewImage,
-                            rawPhotoData: data,
+                            rawPhotoData: retainRawPhotoData ? data : nil,
                             renderPayload: processed.renderPayload,
                             captureMetadata: captureMetadata
                         )

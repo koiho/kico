@@ -13,7 +13,7 @@ use crate::{
         error::RenderError,
         types::{GpuImage, MaskBundle},
     },
-    RenderContext, Renderer,
+    RenderContext, RenderRuntimeOptions, Renderer,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -42,6 +42,7 @@ pub struct RenderModelOutputsRequest {
     pub foreground_subject_mask: Option<RenderBuffer>,
     pub normalized_params: Vec<f32>,
     pub gate_values: Vec<f32>,
+    pub runtime_options: RenderRuntimeOptions,
 }
 
 pub struct RenderModelOutputsRequestRef<'a> {
@@ -53,6 +54,7 @@ pub struct RenderModelOutputsRequestRef<'a> {
     pub foreground_subject_mask: Option<RenderBuffer>,
     pub normalized_params: &'a [f32],
     pub gate_values: &'a [f32],
+    pub runtime_options: RenderRuntimeOptions,
 }
 
 #[derive(Debug, Clone)]
@@ -143,6 +145,7 @@ pub fn render_with_model_outputs(
         foreground_subject_mask,
         normalized_params,
         gate_values,
+        runtime_options,
     } = request;
 
     render_with_model_outputs_ref(RenderModelOutputsRequestRef {
@@ -154,6 +157,7 @@ pub fn render_with_model_outputs(
         foreground_subject_mask,
         normalized_params: &normalized_params,
         gate_values: &gate_values,
+        runtime_options,
     })
 }
 
@@ -224,25 +228,33 @@ pub fn render_with_model_outputs_ref(
         )?),
     };
 
-    let mut encoder = runtime.ctx.create_encoder("render_model_outputs");
-    let outputs = runtime
-        .renderer
-        .render_from_model_outputs(
-            &runtime.ctx,
-            &mut encoder,
-            &neutral,
-            &request.normalized_params,
-            &request.gate_values,
-            &masks,
-        )
-        .map_err(RenderModelOutputsError::from)?;
-    let pending_readback = enqueue_readback(&runtime, &mut encoder, &outputs.final_image)?;
-    runtime
-        .ctx
-        .submit_and_wait(encoder)
-        .map_err(RenderModelOutputsError::from)?;
+    let final_image = {
+        let mut encoder = runtime.ctx.create_encoder("render_model_outputs");
+        let outputs = runtime
+            .renderer
+            .render_from_model_outputs_with_runtime_options(
+                &runtime.ctx,
+                &mut encoder,
+                &neutral,
+                &request.normalized_params,
+                &request.gate_values,
+                request.runtime_options,
+                &masks,
+            )
+            .map_err(RenderModelOutputsError::from)?;
+        let pending_readback = enqueue_readback(&runtime, &mut encoder, &outputs.final_image)?;
+        runtime
+            .ctx
+            .submit_and_wait(encoder)
+            .map_err(RenderModelOutputsError::from)?;
 
-    let final_image = finish_readback(&runtime, pending_readback)?;
+        finish_readback(&runtime, pending_readback)?
+    };
+    drop(masks);
+    drop(zero_mask);
+    drop(neutral);
+    runtime.ctx.trim_unused_scratch_images();
+    trim_zero_mask_cache(&runtime);
     Ok(RenderModelOutputsResponse { final_image })
 }
 
@@ -619,6 +631,25 @@ fn recycle_readback_buffer(runtime: &RuntimeState, pool_index: usize) {
     if let Some(entry) = pool.entries.get_mut(pool_index) {
         entry.in_use = false;
     }
+    if pool.entries.len() <= 1 {
+        return;
+    }
+
+    let mut retained = Vec::with_capacity(pool.entries.len());
+    for (index, entry) in pool.entries.drain(..).enumerate() {
+        if entry.in_use || index == pool_index {
+            retained.push(entry);
+        }
+    }
+    pool.entries = retained;
+}
+
+fn trim_zero_mask_cache(runtime: &RuntimeState) {
+    runtime
+        .zero_mask_cache
+        .lock()
+        .expect("zero mask cache mutex should not be poisoned")
+        .clear();
 }
 
 fn texture_format(format: RenderBufferFormat) -> wgpu::TextureFormat {
@@ -697,6 +728,7 @@ mod tests {
             foreground_subject_mask: None,
             normalized_params: vec![0.5; crate::PARAMETER_SPECS.len()],
             gate_values: vec![0.0; crate::GATE_NAMES.len()],
+            runtime_options: RenderRuntimeOptions::default(),
         };
 
         let response = match render_with_model_outputs(request) {
@@ -725,6 +757,7 @@ mod tests {
             foreground_subject_mask: Some(solid_r8_buffer(4, 2, 200)),
             normalized_params: vec![0.5; crate::PARAMETER_SPECS.len()],
             gate_values: vec![0.0; crate::GATE_NAMES.len()],
+            runtime_options: RenderRuntimeOptions::default(),
         };
 
         let response = match render_with_model_outputs(request) {
@@ -754,6 +787,7 @@ mod tests {
             foreground_subject_mask: None,
             normalized_params: vec![0.5; crate::PARAMETER_SPECS.len()],
             gate_values: vec![0.0; crate::GATE_NAMES.len()],
+            runtime_options: RenderRuntimeOptions::default(),
         };
 
         let error = render_with_model_outputs(request).unwrap_err();

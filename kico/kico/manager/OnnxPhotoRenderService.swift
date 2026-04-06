@@ -38,20 +38,17 @@ struct PreparedPhotoRenderJob: Sendable {
 enum OnnxPhotoRenderJobBuilder {
     nonisolated(unsafe) private static let displayColorSpace =
         CGColorSpace(name: CGColorSpace.sRGB)!
-    nonisolated(unsafe) private static let linearColorSpace =
-        CGColorSpace(name: CGColorSpace.linearSRGB)!
     nonisolated(unsafe) private static let displayDecodeContext = CIContext(
         options: [.workingColorSpace: displayColorSpace]
-    )
-    nonisolated(unsafe) private static let linearDecodeContext = CIContext(
-        options: [.workingColorSpace: linearColorSpace]
     )
 
     nonisolated static func prepare(
         referenceImage: UIImage?,
         rawCapture: RawCaptureResult,
         analysisOptions: CaptureAnalysisOptions = .collectionExport,
+        previewImageMaxDimension: Int? = nil,
         referenceImageMaxDimension: Int? = nil,
+        renderRuntimeOptions: FfiRenderRuntimeOptions,
         requiresReferenceImage: Bool = false
     ) throws -> PreparedPhotoRenderJob {
         guard let renderPayload = rawCapture.renderPayload else {
@@ -63,19 +60,24 @@ enum OnnxPhotoRenderJobBuilder {
         }
 
         let normalizedPreview = normalizeOrientation(of: rawCapture.previewImage)
+        let effectivePreviewImage = downscaleIfNeeded(
+            normalizedPreview,
+            maxDimension: previewImageMaxDimension
+        )
+        let normalizedReferenceImage = referenceImage.map(normalizeOrientation)
         let effectiveReferenceImage = downscaleIfNeeded(
-            normalizeOrientation(of: referenceImage ?? normalizedPreview),
+            normalizedReferenceImage ?? effectivePreviewImage,
             maxDimension: referenceImageMaxDimension
         )
         let usedSelfReference = referenceImage == nil
 
         let analysis = try CaptureAnalyzer().analyze(
-            previewImage: normalizedPreview,
+            previewImage: effectivePreviewImage,
             options: analysisOptions
         )
         let request = FfiOnnxRenderRequest(
             referenceImage: try makeRGBA8Buffer(from: effectiveReferenceImage),
-            neutralPreviewImage: try makeRGBA8Buffer(from: normalizedPreview),
+            neutralPreviewImage: try makeRGBA8Buffer(from: effectivePreviewImage),
             neutralImage: makeRGBA16Buffer(from: renderPayload),
             faceMask: makeMaskBuffer(values: analysis.faceMask, width: analysis.width, height: analysis.height),
             personMask: makeMaskBuffer(values: analysis.personMask, width: analysis.width, height: analysis.height),
@@ -85,7 +87,8 @@ enum OnnxPhotoRenderJobBuilder {
                 values: analysis.foregroundSubjectMask,
                 width: analysis.width,
                 height: analysis.height
-            )
+            ),
+            renderRuntimeOptions: renderRuntimeOptions
         )
 
         return PreparedPhotoRenderJob(request: request, usedSelfReference: usedSelfReference)
@@ -95,32 +98,21 @@ enum OnnxPhotoRenderJobBuilder {
         if buffer.format == .rgba16Float {
             return try makeToneMappedDisplayImage(from: buffer)
         }
+        guard buffer.format == .rgba8Unorm else {
+            throw OnnxPhotoRenderServiceError.unsupportedFinalImageFormat(buffer.format)
+        }
 
         let size = CGSize(width: Int(buffer.width), height: Int(buffer.height))
         let extent = CGRect(origin: .zero, size: size)
-
-        let format: CIFormat
-        let sourceColorSpace: CGColorSpace
-        let context: CIContext
-        switch buffer.format {
-        case .rgba8Unorm:
-            format = .RGBA8
-            sourceColorSpace = displayColorSpace
-            context = displayDecodeContext
-        case .rgba16Float:
-            throw OnnxPhotoRenderServiceError.unsupportedFinalImageFormat(buffer.format)
-        case .r8Unorm:
-            throw OnnxPhotoRenderServiceError.unsupportedFinalImageFormat(buffer.format)
-        }
 
         let ciImage = CIImage(
             bitmapData: buffer.data,
             bytesPerRow: Int(buffer.bytesPerRow),
             size: size,
-            format: format,
-            colorSpace: sourceColorSpace
+            format: .RGBA8,
+            colorSpace: displayColorSpace
         )
-        guard let cgImage = context.createCGImage(
+        guard let cgImage = displayDecodeContext.createCGImage(
             ciImage,
             from: extent,
             format: .RGBA8,

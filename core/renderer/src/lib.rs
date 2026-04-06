@@ -17,7 +17,7 @@ pub use api::contract::{
     RENDER_STAGE_ORDER,
 };
 pub use api::error::{RenderError, RenderResult};
-pub use api::renderer::Renderer;
+pub use api::renderer::{RenderRuntimeOptions, Renderer};
 pub use api::types::{
     BloomParams, ExposureWbParams, FaceLocalParams, ForegroundSubjectLocalParams,
     GlobalColorParams, GlobalToneParams, GpuImage, GpuMask, HalationParams, HueSectorAdjustment,

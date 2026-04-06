@@ -4,7 +4,7 @@ use half::{
     f16,
     slice::{HalfBitsSliceExt, HalfFloatSliceExt},
 };
-use inferencer::{InferenceInputs, OnnxInferencer, TensorData};
+use inferencer::{InferenceInputsRef, OnnxInferencer, TensorData, TensorDataRef};
 use renderer::{RenderBuffer, RenderBufferFormat};
 
 use crate::IntegrationError;
@@ -12,7 +12,6 @@ use crate::IntegrationError;
 pub(crate) struct ModelInferenceRequest {
     pub reference_image: RenderBuffer,
     pub neutral_preview_image: RenderBuffer,
-    pub neutral_image: RenderBuffer,
     pub face_mask: Option<RenderBuffer>,
     pub person_mask: Option<RenderBuffer>,
     pub highlight_mask: Option<RenderBuffer>,
@@ -28,6 +27,9 @@ pub(crate) struct ModelInferenceResult {
 pub(crate) struct ModelInferenceEngine {
     inferencer: OnnxInferencer,
     input_size: usize,
+    ref_image_buffer: Vec<f32>,
+    neutral_preview_buffer: Vec<f32>,
+    mask_tensor_buffer: Vec<f32>,
 }
 
 impl ModelInferenceEngine {
@@ -46,6 +48,9 @@ impl ModelInferenceEngine {
         Ok(Self {
             inferencer,
             input_size,
+            ref_image_buffer: Vec::new(),
+            neutral_preview_buffer: Vec::new(),
+            mask_tensor_buffer: Vec::new(),
         })
     }
 
@@ -63,7 +68,6 @@ impl ModelInferenceEngine {
     ) -> Result<ModelInferenceResult, IntegrationError> {
         validate_color_buffer(&request.reference_image, "reference_image")?;
         validate_color_buffer(&request.neutral_preview_image, "neutral_preview_image")?;
-        validate_color_buffer(&request.neutral_image, "neutral_image")?;
         validate_optional_mask(&request.face_mask, "face_mask")?;
         validate_optional_mask(&request.person_mask, "person_mask")?;
         validate_optional_mask(&request.highlight_mask, "highlight_mask")?;
@@ -71,17 +75,19 @@ impl ModelInferenceEngine {
         validate_optional_mask(&request.foreground_subject_mask, "foreground_subject_mask")?;
 
         let mut resize_axes_cache = ResizeAxesCache::default();
-        let ref_image = color_buffer_to_nchw_with_cache(
+        color_buffer_to_nchw_with_cache_into(
             &request.reference_image,
             self.input_size,
             &mut resize_axes_cache,
+            &mut self.ref_image_buffer,
         )?;
-        let neutral_preview = color_buffer_to_nchw_with_cache(
+        color_buffer_to_nchw_with_cache_into(
             &request.neutral_preview_image,
             self.input_size,
             &mut resize_axes_cache,
+            &mut self.neutral_preview_buffer,
         )?;
-        let mask_tensor = pack_mask_tensor(
+        pack_mask_tensor_into(
             request.face_mask.as_ref(),
             request.person_mask.as_ref(),
             request.highlight_mask.as_ref(),
@@ -89,18 +95,24 @@ impl ModelInferenceEngine {
             request.foreground_subject_mask.as_ref(),
             self.input_size,
             &mut resize_axes_cache,
+            &mut self.mask_tensor_buffer,
         )?;
 
-        let inference_outputs = self.inferencer.infer(InferenceInputs {
-            ref_image: TensorData::new(vec![1, 3, self.input_size, self.input_size], ref_image)?,
-            neutral_preview: TensorData::new(
-                vec![1, 3, self.input_size, self.input_size],
-                neutral_preview,
-            )?,
-            mask_tensor: TensorData::new(
-                vec![1, 5, self.input_size, self.input_size],
-                mask_tensor,
-            )?,
+        let ref_shape = [1, 3, self.input_size, self.input_size];
+        let mask_shape = [1, 5, self.input_size, self.input_size];
+        let inference_outputs = self.inferencer.infer_ref(InferenceInputsRef {
+            ref_image: TensorDataRef {
+                shape: &ref_shape,
+                values: &self.ref_image_buffer,
+            },
+            neutral_preview: TensorDataRef {
+                shape: &ref_shape,
+                values: &self.neutral_preview_buffer,
+            },
+            mask_tensor: TensorDataRef {
+                shape: &mask_shape,
+                values: &self.mask_tensor_buffer,
+            },
         })?;
 
         Ok(ModelInferenceResult {
@@ -260,44 +272,35 @@ impl ResizeAxesCache {
     }
 }
 
-#[cfg(test)]
-fn color_buffer_to_nchw(
-    buffer: &RenderBuffer,
-    target_size: usize,
-) -> Result<Vec<f32>, IntegrationError> {
-    let mut resize_axes_cache = ResizeAxesCache::default();
-    color_buffer_to_nchw_with_cache(buffer, target_size, &mut resize_axes_cache)
-}
-
-fn color_buffer_to_nchw_with_cache(
+fn color_buffer_to_nchw_with_cache_into(
     buffer: &RenderBuffer,
     target_size: usize,
     resize_axes_cache: &mut ResizeAxesCache,
-) -> Result<Vec<f32>, IntegrationError> {
+    output: &mut Vec<f32>,
+) -> Result<(), IntegrationError> {
     let plane = target_size * target_size;
-    let mut output = vec![0.0_f32; 3 * plane];
+    output.clear();
+    output.resize(3 * plane, 0.0);
 
     if buffer.width as usize == target_size && buffer.height as usize == target_size {
         match buffer.format {
-            RenderBufferFormat::Rgba8Unorm => copy_rgba8_to_nchw(buffer, &mut output),
-            RenderBufferFormat::Rgba16Float => copy_rgba16f_to_nchw(buffer, &mut output),
+            RenderBufferFormat::Rgba8Unorm => copy_rgba8_to_nchw(buffer, output),
+            RenderBufferFormat::Rgba16Float => copy_rgba16f_to_nchw(buffer, output),
             RenderBufferFormat::R8Unorm => {
                 return Err(IntegrationError::InvalidBuffer {
                     message: "RGBA read requested for R8Unorm buffer".to_string(),
                 })
             }
         }
-        return Ok(output);
+        return Ok(());
     }
 
     let (x_axis, y_axis) =
         resize_axes_cache.get_or_create(buffer.width, buffer.height, target_size);
 
     match buffer.format {
-        RenderBufferFormat::Rgba8Unorm => resize_rgba8_to_nchw(buffer, x_axis, y_axis, &mut output),
-        RenderBufferFormat::Rgba16Float => {
-            resize_rgba16f_to_nchw(buffer, x_axis, y_axis, &mut output)
-        }
+        RenderBufferFormat::Rgba8Unorm => resize_rgba8_to_nchw(buffer, x_axis, y_axis, output),
+        RenderBufferFormat::Rgba16Float => resize_rgba16f_to_nchw(buffer, x_axis, y_axis, output),
         RenderBufferFormat::R8Unorm => {
             return Err(IntegrationError::InvalidBuffer {
                 message: "RGBA read requested for R8Unorm buffer".to_string(),
@@ -305,10 +308,10 @@ fn color_buffer_to_nchw_with_cache(
         }
     }
 
-    Ok(output)
+    Ok(())
 }
 
-fn pack_mask_tensor(
+fn pack_mask_tensor_into(
     face_mask: Option<&RenderBuffer>,
     person_mask: Option<&RenderBuffer>,
     highlight_mask: Option<&RenderBuffer>,
@@ -316,9 +319,11 @@ fn pack_mask_tensor(
     foreground_subject_mask: Option<&RenderBuffer>,
     target_size: usize,
     resize_axes_cache: &mut ResizeAxesCache,
-) -> Result<Vec<f32>, IntegrationError> {
+    output: &mut Vec<f32>,
+) -> Result<(), IntegrationError> {
     let plane = target_size * target_size;
-    let mut output = vec![0.0_f32; 5 * plane];
+    output.clear();
+    output.resize(5 * plane, 0.0);
     let masks = [
         face_mask,
         person_mask,
@@ -343,7 +348,7 @@ fn pack_mask_tensor(
         resize_mask_to_plane(mask, x_axis, y_axis, channel_output);
     }
 
-    Ok(output)
+    Ok(())
 }
 
 fn build_resize_axis(target_size: usize, source_size: usize) -> Vec<ResizeSample> {
@@ -620,14 +625,22 @@ mod tests {
     #[test]
     fn color_resize_produces_nchw_tensor() {
         let buffer = solid_rgba8_buffer(2, 2, [64, 128, 192, 255]);
-        let tensor = color_buffer_to_nchw(&buffer, 4).expect("resize should succeed");
+        let mut tensor = Vec::new();
+        color_buffer_to_nchw_with_cache_into(
+            &buffer,
+            4,
+            &mut ResizeAxesCache::default(),
+            &mut tensor,
+        )
+        .expect("resize should succeed");
         assert_eq!(tensor.len(), 3 * 4 * 4);
         assert!(tensor.iter().all(|value| *value >= 0.0 && *value <= 1.0));
     }
 
     #[test]
     fn mask_pack_defaults_missing_masks_to_zero() {
-        let tensor = pack_mask_tensor(
+        let mut tensor = Vec::new();
+        pack_mask_tensor_into(
             None,
             None,
             None,
@@ -635,6 +648,7 @@ mod tests {
             None,
             4,
             &mut ResizeAxesCache::default(),
+            &mut tensor,
         )
         .expect("mask pack should work");
         assert_eq!(tensor.len(), 5 * 4 * 4);

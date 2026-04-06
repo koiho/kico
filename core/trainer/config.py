@@ -67,6 +67,7 @@ class TrainingConfig:
     weight_decay: float = 1e-4
     freeze_backbone_epochs: int = 3
     backbone_lr_scale: float = 0.1
+    freeze_backbone_norm_stats: bool = False
     warmup_epochs: int = 1
     min_lr_ratio: float = 0.1
     val_ratio: float = 0.1
@@ -122,6 +123,7 @@ def load_training_config(path: str | Path) -> TrainingConfig:
         weight_decay=raw.get("weight_decay", 1e-4),
         freeze_backbone_epochs=raw.get("freeze_backbone_epochs", 3),
         backbone_lr_scale=raw.get("backbone_lr_scale", 0.1),
+        freeze_backbone_norm_stats=raw.get("freeze_backbone_norm_stats", False),
         warmup_epochs=raw.get("warmup_epochs", 1),
         min_lr_ratio=raw.get("min_lr_ratio", 0.1),
         val_ratio=raw.get("val_ratio", 0.1),

@@ -11,7 +11,7 @@ use inferencer::InferencerError;
 use model_inference::{ModelInferenceEngine, ModelInferenceRequest};
 use renderer::{
     render_with_model_outputs_ref, RenderBuffer, RenderBufferFormat, RenderModelOutputsError,
-    RenderModelOutputsRequestRef,
+    RenderModelOutputsRequestRef, RenderRuntimeOptions,
 };
 use thiserror::Error;
 
@@ -64,6 +64,12 @@ pub struct FfiRenderBuffer {
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
+pub struct FfiRenderRuntimeOptions {
+    pub mask_working_max_dimension: Option<u32>,
+    pub bloom_base_max_dimension: Option<u32>,
+}
+
+#[derive(Debug, Clone, uniffi::Record)]
 pub struct FfiOnnxRenderRequest {
     pub reference_image: FfiRenderBuffer,
     pub neutral_preview_image: FfiRenderBuffer,
@@ -73,6 +79,7 @@ pub struct FfiOnnxRenderRequest {
     pub highlight_mask: Option<FfiRenderBuffer>,
     pub shadow_mask: Option<FfiRenderBuffer>,
     pub foreground_subject_mask: Option<FfiRenderBuffer>,
+    pub render_runtime_options: FfiRenderRuntimeOptions,
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
@@ -124,15 +131,21 @@ impl OnnxRenderPipeline {
         &self,
         request: FfiOnnxRenderRequest,
     ) -> Result<FfiOnnxRenderResponse, IntegrationError> {
+        let runtime_options: RenderRuntimeOptions = request.render_runtime_options.into();
+        let neutral_image: RenderBuffer = request.neutral_image.into();
+        let face_mask = request.face_mask.map(Into::into);
+        let person_mask = request.person_mask.map(Into::into);
+        let highlight_mask = request.highlight_mask.map(Into::into);
+        let shadow_mask = request.shadow_mask.map(Into::into);
+        let foreground_subject_mask = request.foreground_subject_mask.map(Into::into);
         let internal_request = ModelInferenceRequest {
             reference_image: request.reference_image.into(),
             neutral_preview_image: request.neutral_preview_image.into(),
-            neutral_image: request.neutral_image.into(),
-            face_mask: request.face_mask.map(Into::into),
-            person_mask: request.person_mask.map(Into::into),
-            highlight_mask: request.highlight_mask.map(Into::into),
-            shadow_mask: request.shadow_mask.map(Into::into),
-            foreground_subject_mask: request.foreground_subject_mask.map(Into::into),
+            face_mask: face_mask.clone(),
+            person_mask: person_mask.clone(),
+            highlight_mask: highlight_mask.clone(),
+            shadow_mask: shadow_mask.clone(),
+            foreground_subject_mask: foreground_subject_mask.clone(),
         };
         let inference = self
             .inference
@@ -142,14 +155,15 @@ impl OnnxRenderPipeline {
             })?
             .infer(&internal_request)?;
         let render_response = render_with_model_outputs_ref(RenderModelOutputsRequestRef {
-            neutral_image: internal_request.neutral_image,
-            face_mask: internal_request.face_mask,
-            person_mask: internal_request.person_mask,
-            highlight_mask: internal_request.highlight_mask,
-            shadow_mask: internal_request.shadow_mask,
-            foreground_subject_mask: internal_request.foreground_subject_mask,
+            neutral_image,
+            face_mask,
+            person_mask,
+            highlight_mask,
+            shadow_mask,
+            foreground_subject_mask,
             normalized_params: &inference.normalized_params,
             gate_values: &inference.gate_values,
+            runtime_options,
         })?;
 
         Ok(FfiOnnxRenderResponse {
@@ -192,6 +206,15 @@ impl From<FfiRenderBuffer> for RenderBuffer {
     }
 }
 
+impl From<FfiRenderRuntimeOptions> for RenderRuntimeOptions {
+    fn from(value: FfiRenderRuntimeOptions) -> Self {
+        Self {
+            mask_working_max_dimension: value.mask_working_max_dimension,
+            bloom_base_max_dimension: value.bloom_base_max_dimension,
+        }
+    }
+}
+
 impl From<RenderBuffer> for FfiRenderBuffer {
     fn from(value: RenderBuffer) -> Self {
         Self {
@@ -225,6 +248,10 @@ mod tests {
             highlight_mask: None,
             shadow_mask: None,
             foreground_subject_mask: None,
+            render_runtime_options: FfiRenderRuntimeOptions {
+                mask_working_max_dimension: Some(1_536),
+                bloom_base_max_dimension: Some(1_536),
+            },
         };
 
         let response = match pipeline.render(request) {

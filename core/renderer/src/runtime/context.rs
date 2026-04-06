@@ -543,6 +543,34 @@ impl RenderContext {
         }
     }
 
+    pub fn trim_unused_scratch_images(&self) {
+        let mut pool = self
+            .scratch_pool
+            .lock()
+            .expect("scratch pool mutex should not be poisoned");
+        if pool.entries.len() <= 1 {
+            return;
+        }
+
+        let mut retained = Vec::with_capacity(pool.entries.len());
+        let mut seen = HashMap::<(u32, u32, wgpu::TextureFormat), ()>::new();
+
+        for entry in pool.entries.drain(..).rev() {
+            if entry.in_use {
+                retained.push(entry);
+                continue;
+            }
+
+            let key = (entry.width, entry.height, entry.format);
+            if seen.insert(key, ()).is_none() {
+                retained.push(entry);
+            }
+        }
+
+        retained.reverse();
+        pool.entries = retained;
+    }
+
     #[cfg(test)]
     pub(crate) fn scratch_pool_size(&self) -> usize {
         self.scratch_pool

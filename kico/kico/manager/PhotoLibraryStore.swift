@@ -77,21 +77,19 @@ actor PhotoLibraryStore {
     func savePhoto(_ image: UIImage, title: String = "无题", date: Date = Date()) throws -> SavedPhotoArtifact {
         try ensureDirectories()
 
-        let normalizedImage = normalizeOrientation(of: image)
-        let thumbnail = makeThumbnail(from: normalizedImage, maxDimension: 320)
-
-        let encodedImage = try encodePrimaryImage(normalizedImage)
-
-        guard let thumbnailData = thumbnail.jpegData(compressionQuality: 0.82) else {
-            throw PhotoLibraryStoreError.thumbnailEncodingFailed
+        let artifacts = try autoreleasepool { () throws -> (encodedImage: (data: Data, fileExtension: String), thumbnailData: Data) in
+            let normalizedImage = normalizeOrientation(of: image)
+            let encodedImage = try encodePrimaryImage(normalizedImage)
+            let thumbnailData = try makeThumbnailData(from: encodedImage.data, maxPixelSize: 320)
+            return (encodedImage, thumbnailData)
         }
 
         let id = UUID().uuidString.lowercased()
-        let imageFileName = "\(id).\(encodedImage.fileExtension)"
+        let imageFileName = "\(id).\(artifacts.encodedImage.fileExtension)"
         let thumbnailFileName = "\(id)_thumb.jpg"
 
-        try encodedImage.data.write(to: Self.imageURL(for: imageFileName), options: .atomic)
-        try thumbnailData.write(to: Self.thumbnailURL(for: thumbnailFileName), options: .atomic)
+        try artifacts.encodedImage.data.write(to: Self.imageURL(for: imageFileName), options: .atomic)
+        try artifacts.thumbnailData.write(to: Self.thumbnailURL(for: thumbnailFileName), options: .atomic)
 
         let _ = try loadPhotos()
         let item = PhotoItem(
@@ -114,7 +112,7 @@ actor PhotoLibraryStore {
             throw PhotoLibraryStoreError.indexSaveFailed
         }
 
-        return SavedPhotoArtifact(item: item, thumbnailData: thumbnailData)
+        return SavedPhotoArtifact(item: item, thumbnailData: artifacts.thumbnailData)
     }
 
     nonisolated static func imageURL(for fileName: String) -> URL {
@@ -171,25 +169,45 @@ actor PhotoLibraryStore {
         }
     }
 
-    private func makeThumbnail(from image: UIImage, maxDimension: CGFloat) -> UIImage {
-        let longestEdge = max(image.size.width, image.size.height)
-        guard longestEdge > maxDimension else {
-            return image
+    private func makeThumbnailData(from imageData: Data, maxPixelSize: CGFloat) throws -> Data {
+        guard let source = CGImageSourceCreateWithData(imageData as CFData, nil) else {
+            throw PhotoLibraryStoreError.thumbnailEncodingFailed
         }
 
-        let scale = maxDimension / longestEdge
-        let targetSize = CGSize(
-            width: max(1, (image.size.width * scale).rounded()),
-            height: max(1, (image.size.height * scale).rounded())
-        )
-
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = 1
-        format.opaque = false
-        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
-        return renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: false,
+            kCGImageSourceThumbnailMaxPixelSize: max(1, Int(maxPixelSize.rounded()))
+        ]
+        guard let thumbnailImage = CGImageSourceCreateThumbnailAtIndex(
+            source,
+            0,
+            options as CFDictionary
+        ) else {
+            throw PhotoLibraryStoreError.thumbnailEncodingFailed
         }
+
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            data,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else {
+            throw PhotoLibraryStoreError.thumbnailEncodingFailed
+        }
+
+        let destinationOptions: [CFString: Any] = [
+            kCGImageDestinationLossyCompressionQuality: 0.82
+        ]
+        CGImageDestinationAddImage(destination, thumbnailImage, destinationOptions as CFDictionary)
+
+        guard CGImageDestinationFinalize(destination) else {
+            throw PhotoLibraryStoreError.thumbnailEncodingFailed
+        }
+
+        return data as Data
     }
 
     private func encodePrimaryImage(_ image: UIImage) throws -> (data: Data, fileExtension: String) {

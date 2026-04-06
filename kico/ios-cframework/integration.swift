@@ -663,10 +663,11 @@ public struct FfiOnnxRenderRequest: Equatable, Hashable {
     public var highlightMask: FfiRenderBuffer?
     public var shadowMask: FfiRenderBuffer?
     public var foregroundSubjectMask: FfiRenderBuffer?
+    public var renderRuntimeOptions: FfiRenderRuntimeOptions
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(referenceImage: FfiRenderBuffer, neutralPreviewImage: FfiRenderBuffer, neutralImage: FfiRenderBuffer, faceMask: FfiRenderBuffer?, personMask: FfiRenderBuffer?, highlightMask: FfiRenderBuffer?, shadowMask: FfiRenderBuffer?, foregroundSubjectMask: FfiRenderBuffer?) {
+    public init(referenceImage: FfiRenderBuffer, neutralPreviewImage: FfiRenderBuffer, neutralImage: FfiRenderBuffer, faceMask: FfiRenderBuffer?, personMask: FfiRenderBuffer?, highlightMask: FfiRenderBuffer?, shadowMask: FfiRenderBuffer?, foregroundSubjectMask: FfiRenderBuffer?, renderRuntimeOptions: FfiRenderRuntimeOptions) {
         self.referenceImage = referenceImage
         self.neutralPreviewImage = neutralPreviewImage
         self.neutralImage = neutralImage
@@ -675,6 +676,7 @@ public struct FfiOnnxRenderRequest: Equatable, Hashable {
         self.highlightMask = highlightMask
         self.shadowMask = shadowMask
         self.foregroundSubjectMask = foregroundSubjectMask
+        self.renderRuntimeOptions = renderRuntimeOptions
     }
 
     
@@ -700,7 +702,8 @@ public struct FfiConverterTypeFfiOnnxRenderRequest: FfiConverterRustBuffer {
                 personMask: FfiConverterOptionTypeFfiRenderBuffer.read(from: &buf), 
                 highlightMask: FfiConverterOptionTypeFfiRenderBuffer.read(from: &buf), 
                 shadowMask: FfiConverterOptionTypeFfiRenderBuffer.read(from: &buf), 
-                foregroundSubjectMask: FfiConverterOptionTypeFfiRenderBuffer.read(from: &buf)
+                foregroundSubjectMask: FfiConverterOptionTypeFfiRenderBuffer.read(from: &buf), 
+                renderRuntimeOptions: FfiConverterTypeFfiRenderRuntimeOptions.read(from: &buf)
         )
     }
 
@@ -713,6 +716,7 @@ public struct FfiConverterTypeFfiOnnxRenderRequest: FfiConverterRustBuffer {
         FfiConverterOptionTypeFfiRenderBuffer.write(value.highlightMask, into: &buf)
         FfiConverterOptionTypeFfiRenderBuffer.write(value.shadowMask, into: &buf)
         FfiConverterOptionTypeFfiRenderBuffer.write(value.foregroundSubjectMask, into: &buf)
+        FfiConverterTypeFfiRenderRuntimeOptions.write(value.renderRuntimeOptions, into: &buf)
     }
 }
 
@@ -853,6 +857,60 @@ public func FfiConverterTypeFfiRenderBuffer_lift(_ buf: RustBuffer) throws -> Ff
 #endif
 public func FfiConverterTypeFfiRenderBuffer_lower(_ value: FfiRenderBuffer) -> RustBuffer {
     return FfiConverterTypeFfiRenderBuffer.lower(value)
+}
+
+
+public struct FfiRenderRuntimeOptions: Equatable, Hashable {
+    public var maskWorkingMaxDimension: UInt32?
+    public var bloomBaseMaxDimension: UInt32?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(maskWorkingMaxDimension: UInt32?, bloomBaseMaxDimension: UInt32?) {
+        self.maskWorkingMaxDimension = maskWorkingMaxDimension
+        self.bloomBaseMaxDimension = bloomBaseMaxDimension
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension FfiRenderRuntimeOptions: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFfiRenderRuntimeOptions: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FfiRenderRuntimeOptions {
+        return
+            try FfiRenderRuntimeOptions(
+                maskWorkingMaxDimension: FfiConverterOptionUInt32.read(from: &buf), 
+                bloomBaseMaxDimension: FfiConverterOptionUInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FfiRenderRuntimeOptions, into buf: inout [UInt8]) {
+        FfiConverterOptionUInt32.write(value.maskWorkingMaxDimension, into: &buf)
+        FfiConverterOptionUInt32.write(value.bloomBaseMaxDimension, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFfiRenderRuntimeOptions_lift(_ buf: RustBuffer) throws -> FfiRenderRuntimeOptions {
+    return try FfiConverterTypeFfiRenderRuntimeOptions.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFfiRenderRuntimeOptions_lower(_ value: FfiRenderRuntimeOptions) -> RustBuffer {
+    return FfiConverterTypeFfiRenderRuntimeOptions.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
@@ -1047,6 +1105,30 @@ public func FfiConverterTypeIntegrationError_lift(_ buf: RustBuffer) throws -> I
 #endif
 public func FfiConverterTypeIntegrationError_lower(_ value: IntegrationError) -> RustBuffer {
     return FfiConverterTypeIntegrationError.lower(value)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
+    typealias SwiftType = UInt32?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterUInt32.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterUInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
 }
 
 #if swift(>=5.8)
